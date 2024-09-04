@@ -1,0 +1,105 @@
+---
+title: "ECON 6750 Data Replication"
+author: Jacob Croskey
+output: html_document
+date: "2023-12-14"
+---
+```{r message=FALSE, warning=FALSE}
+
+setwd("~/Desktop/ECON 4750/Replication/data")
+library(haven)
+library(tidyverse)
+library(dplyr)
+library(plm)
+library(clubSandwich)
+library(lmtest)
+library(ggplot2)
+library(modelsummary)
+library(estimatr)
+
+preselecsuccfail <- read_dta("pres-elec-succfail.dta")
+preselec <- read_dta("pres-elec.dta")
+
+```
+
+
+```{r message=FALSE, warning=FALSE}
+#Table 4 Panel A Replication Regressions
+
+#Panel A shows the impact of a mass shooting on Republican vote share. Model1 is the simple relationship without controlling for state or population time trends. Model2 includes the state and population time trends. Model3 includes state-year fixed effects. Model4 and Model5 are the same as 2 and 3 respectively, but are weighted by county population.
+
+model1 <- plm(repshare ~ mspost, data = preselec, model = "within", effect = "twoways", index = c("county", "year"))
+summary(model1)
+
+model2 <- plm(repshare ~ mspost + popsd + popsdsq, data = preselec, model = "within", effect = "twoways", index = c("county", "year", "stateyear"))
+summary(model2)
+
+model3 <- plm(repshare ~ mspost + popsd + popsdsq + stateyear, data = preselec, model = "within", effect = "twoways", index = c("county", "year", "stateyear"))
+summary(model3)
+
+model4 <- plm(repshare ~ mspost + popsd + popsdsq, data = preselec, model = "within", effect = "twoways", weights = pop, index = c("county", "year", "stateyear"))
+summary(model4)
+
+model5 <- plm(repshare ~ mspost + popsd + popsdsq + stateyear, data = preselec, model = "within", effect = "twoways", weights = pop, index = c("county", "year", "stateyear"))
+summary(model5)
+```
+
+
+```{r}
+#Model Summary of Table 4 Panel A Replication
+
+#Model1
+coef(model1)[1]
+#Model2
+coef(model2)[1]
+#Model3
+coef(model3)[1]
+#Model4
+coef(model4)[1]
+#Model5
+coef(model5)[1]
+```
+
+
+```{r message=FALSE, warning=FALSE}
+#Table 4 Panel B Replication Regressions
+
+#Panel B shows the relationship between a success and failed mass shootings on Republican vote share. Reg1 shows that successful mass shootings have an effect and failed do not. Reg2 introduces flexible population trends without changing coefficients much. Reg3 introduces state-year fixed effects. Reg4 and Reg5 are similar to those in 2 and 3 respectively. 
+
+reg1 <- plm(repshare ~ successful + postattack, data = preselecsuccfail, model = "within", effect = "twoways", index = c("county", "year"))
+summary(reg1)
+
+reg2 <- plm(repshare ~ successful + postattack + popsd + popsdsq, data = preselecsuccfail, model = "within", effect = "twoways", index = c("county", "year"))
+summary(reg2)
+
+reg3 <- plm(repshare ~ successful + postattack + popsd + popsdsq + stateyear, data = preselecsuccfail, model = "within", effect = "twoways", index = c("county", "year"))
+summary(reg3)
+
+reg4 <- plm(repshare ~ successful + postattack + popsd + popsdsq, data = preselecsuccfail, weights = pop, model = "within", effect = "twoways", index = c("county", "year", "stateyear"))
+summary(reg4)
+
+reg5 <- plm(repshare ~ successful + postattack + popsd + popsdsq + stateyear, data = preselecsuccfail, weights = pop, model = "within", effect = "twoways", index = c("county", "year", "stateyear"))
+summary(reg5)
+```
+```{r}
+#Model Summary of Table 4 Panel B Replication
+
+#Reg1
+coef(reg1)[c(1, 2)]
+#Reg2
+coef(reg2)[c(1, 2)]
+#Reg3
+coef(reg3)[c(1, 2)]
+#Reg4
+coef(reg4)[c(1, 2)]
+#Reg5
+coef(reg5)[c(1, 2)]
+```
+```{r}
+#Test for Collinearity
+
+cor_matrix <- cor(preselec[, c("state", "year", "county", "pop", "stateyear")])
+print(cor_matrix)
+```
+
+
